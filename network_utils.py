@@ -2,6 +2,7 @@ from Crypto import Random
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
+from hashlib import sha512
 
 KEY_LENGTH = 2048
 AES_KEY_LENGTH = 32
@@ -19,8 +20,16 @@ class DestinationPublicKeyNotSetException(Exception):
         return f'{self.message}'
 
 
-class AESCipher:
+class AuthenticationFailedException(Exception):
+    def __init__(self, message="The message authentication failed! A stranger send to you this message! The protocol must to be stoped!"):
+        self.message = message
+        super().__init__(self.message)
 
+    def __str__(self):
+        return f'{self.message}'
+
+
+class AESCipher:
     def pad(self, m):
         return m + b"\0" * (AES.block_size - len(m) % AES.block_size)
 
@@ -41,10 +50,9 @@ class AESCipher:
 
 
 class Messenger:
-    def __init__(self, my_priv_key, channel, secret_key=Random.new().read(AES_KEY_LENGTH)):
+    def __init__(self, my_priv_key, channel):
         self.channel = channel
         self.my_priv_key = my_priv_key
-        self.secret_key = secret_key
         self.cipher = AESCipher()
         self.decryptor = PKCS1_OAEP.new(my_priv_key)
 
@@ -54,9 +62,6 @@ class Messenger:
     def set_dest_pub_key(self, dest_pub_key):
         self.dest_pub_key = dest_pub_key
         self.encryptor = PKCS1_OAEP.new(dest_pub_key)
-
-    def set_secret_key(self, secret_key):
-        self.secret_key = secret_key
 
     def send(self, message):
         if self.dest_pub_key is not None:
@@ -69,25 +74,46 @@ class Messenger:
         else:
             raise DestinationPublicKeyNotSetException()
 
+    def encrypt(self, message):
+        secret_key = self.cipher.get_new_key()
+        encrypted_msg = self.cipher.encrypt(message.encode(), secret_key)
+        encrypted_key = self.encryptor.encrypt(secret_key)
+        return encrypted_msg, encrypted_key
+
     def receive(self):
         encrypted_key_length = int.from_bytes(self.channel.recv(BYTES_NUMBER), ENCODING)
-        print(encrypted_key_length)
         encrypted_key = self.channel.recv(encrypted_key_length)
 
         encrypted_msg_length = int.from_bytes(self.channel.recv(BYTES_NUMBER), ENCODING)
-        print(encrypted_msg_length)
         encrypted_msg = self.channel.recv(encrypted_msg_length)
 
-        return self.decrypt(encrypted_msg, encrypted_key).decode()
-
-    def encrypt(self, message):
-        encrypted_msg = self.cipher.encrypt(message.encode(), self.secret_key)
-        encrypted_key = self.encryptor.encrypt(self.secret_key)
-        return encrypted_msg, encrypted_key
+        return self.decrypt(encrypted_msg, encrypted_key)
 
     def decrypt(self, encrypted_msg, encrypted_key):
         self.secret_key = self.decryptor.decrypt(encrypted_key)
-        return self.cipher.decrypt(encrypted_msg, self.secret_key)
+        return self.cipher.decrypt(encrypted_msg, self.secret_key).decode()
+
+
+class Authenticator:
+    def __init__(self, my_private_key):
+        self.my_private_key = my_private_key
+
+    def sign(self, msg):
+        msg_hash = int.from_bytes(sha512(msg.encode()).digest(), byteorder=ENCODING)
+        signature = pow(msg_hash, self.my_private_key.d, self.my_private_key.n)
+        return signature
+
+    def verify(self, msg, signature, pair_public_key):
+        msg_hash = int.from_bytes(sha512(msg.encode()).digest(), byteorder=ENCODING)
+        signature_hash = pow(signature, pair_public_key.e, pair_public_key.n)
+        return msg_hash == signature_hash
+
+
+
+if __name__ == '__main__':
+    authenticator = Authenticator()
+    msg = "Message for sign! Message for sign! Message for sign! Message for sign! Message for sign!Message for sign! Message for sign! Message for sign! Message for sign!"
+
 
 
 
@@ -120,11 +146,6 @@ def generate_keys():
     f = open('rsa_keys/pg_public_key.pem', 'wb')
     f.write(public_key.export_key('PEM'))
     f.close()
-
-
-if __name__ == '__main__':
-    msg = "Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!Acest este un mesaj secret!"
-
 
 # class Messenger:
 #     def __init__(self, my_priv_key, channel):
