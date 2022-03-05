@@ -1,13 +1,15 @@
+import binascii
+
 from Crypto import Random
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
 from hashlib import sha512
+import uuid
 
 KEY_LENGTH = 2048
 AES_KEY_LENGTH = 32
-BLOCK_LENGTH = 190
-BYTES_NUMBER = 16
+BYTES_NUMBER = 32
 ENCODING = 'big'
 
 
@@ -20,8 +22,17 @@ class DestinationPublicKeyNotSetException(Exception):
         return f'{self.message}'
 
 
+class CommunicationChannelNotSetException(Exception):
+    def __init__(self, message="The communication channel is not set"):
+        self.message = message
+        super().__init__(self.message)
+
+    def __str__(self):
+        return f'{self.message}'
+
+
 class AuthenticationFailedException(Exception):
-    def __init__(self, message="The message authentication failed! A stranger send to you this message! The protocol must to be stoped!"):
+    def __init__(self, message="The message authentication failed! A stranger sent to you this message! The protocol must to be stoped!"):
         self.message = message
         super().__init__(self.message)
 
@@ -50,37 +61,49 @@ class AESCipher:
 
 
 class Messenger:
-    def __init__(self, my_priv_key, channel):
-        self.channel = channel
+    def __init__(self, my_priv_key):
         self.my_priv_key = my_priv_key
-        self.cipher = AESCipher()
         self.decryptor = PKCS1_OAEP.new(my_priv_key)
+        self.cipher = AESCipher()
 
         self.dest_pub_key = None
         self.encryptor = None
+        self.channel = None
 
     def set_dest_pub_key(self, dest_pub_key):
         self.dest_pub_key = dest_pub_key
         self.encryptor = PKCS1_OAEP.new(dest_pub_key)
 
-    def send(self, message):
-        if self.dest_pub_key is not None:
-            encrypted_msg, encrypted_key = self.encrypt(message)
-            self.channel.send(len(encrypted_key).to_bytes(BYTES_NUMBER, ENCODING))
-            self.channel.send(encrypted_key)
+    def set_channel(self, channel):
+        self.channel = channel
 
-            self.channel.send(len(encrypted_msg).to_bytes(BYTES_NUMBER, ENCODING))
-            self.channel.send(encrypted_msg)
-        else:
+    def send(self, message):
+        if self.dest_pub_key is None:
             raise DestinationPublicKeyNotSetException()
 
+        if self.channel is None:
+            raise CommunicationChannelNotSetException()
+
+        encrypted_msg, encrypted_key = self.encrypt(message)
+        self.channel.send(len(encrypted_key).to_bytes(BYTES_NUMBER, ENCODING))
+        self.channel.send(encrypted_key)
+
+        self.channel.send(len(encrypted_msg).to_bytes(BYTES_NUMBER, ENCODING))
+        self.channel.send(encrypted_msg)
+
     def encrypt(self, message):
+        if self.dest_pub_key is None:
+            raise DestinationPublicKeyNotSetException()
+
         secret_key = self.cipher.get_new_key()
         encrypted_msg = self.cipher.encrypt(message.encode(), secret_key)
         encrypted_key = self.encryptor.encrypt(secret_key)
         return encrypted_msg, encrypted_key
 
     def receive(self):
+        if self.channel is None:
+            raise CommunicationChannelNotSetException()
+
         encrypted_key_length = int.from_bytes(self.channel.recv(BYTES_NUMBER), ENCODING)
         encrypted_key = self.channel.recv(encrypted_key_length)
 
@@ -90,8 +113,8 @@ class Messenger:
         return self.decrypt(encrypted_msg, encrypted_key)
 
     def decrypt(self, encrypted_msg, encrypted_key):
-        self.secret_key = self.decryptor.decrypt(encrypted_key)
-        return self.cipher.decrypt(encrypted_msg, self.secret_key).decode()
+        secret_key = self.decryptor.decrypt(encrypted_key)
+        return self.cipher.decrypt(encrypted_msg, secret_key).decode()
 
 
 class Authenticator:
@@ -109,21 +132,16 @@ class Authenticator:
         return msg_hash == signature_hash
 
 
+class Packer:
+    def pack(self, encrypted_msg_bytes):
+        return binascii.hexlify(encrypted_msg_bytes).decode()
 
-if __name__ == '__main__':
-    authenticator = Authenticator()
-    msg = "Message for sign! Message for sign! Message for sign! Message for sign! Message for sign!Message for sign! Message for sign! Message for sign! Message for sign!"
+    def unpack(self, packed_message):
+        return binascii.unhexlify(packed_message.encode())
 
 
-
-
-def get_public_keys():
-    f = open('rsa_keys/merchant_public_key.pem', 'r')
-    merchant_key = RSA.import_key(f.read())
-
-    f = open('rsa_keys/pg_public_key.pem', 'r')
-    pg_key = RSA.import_key(f.read())
-    return (merchant_key, pg_key)
+def get_uniq_id():
+    return str(uuid.uuid4())
 
 
 def generate_keys():
@@ -146,6 +164,22 @@ def generate_keys():
     f = open('rsa_keys/pg_public_key.pem', 'wb')
     f.write(public_key.export_key('PEM'))
     f.close()
+
+
+if __name__ == '__main__':
+     generate_keys()
+
+
+
+
+def get_public_keys():
+    f = open('rsa_keys/merchant_public_key.pem', 'r')
+    merchant_key = RSA.import_key(f.read())
+
+    f = open('rsa_keys/pg_public_key.pem', 'r')
+    pg_key = RSA.import_key(f.read())
+    return merchant_key, pg_key
+
 
 # class Messenger:
 #     def __init__(self, my_priv_key, channel):
