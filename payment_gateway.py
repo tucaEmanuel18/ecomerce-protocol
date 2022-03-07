@@ -68,11 +68,7 @@ def authenticate_messages(msg):
     auth_client()
 
 
-def resolve_transaction(pm):
-    def get_transaction_resp():
-        return "The transaction was successful"
-
-    resp = get_transaction_resp()
+def get_response_msg(resp):
     msg_for_sign = {
         "resp": resp,
         "sid": pm['sid'],
@@ -82,14 +78,20 @@ def resolve_transaction(pm):
 
     return json.dumps(
         {
-            "resp": get_transaction_resp(),
+            "resp": resp,
             "sid": pm['sid'],
             "signature": authenticator.sign(json.dumps(msg_for_sign))
         }
     )
 
 
+def resolve_transaction(pm):
+    print("LOG: Resolving the transaction request")
+    return "The transaction was successful"
+
+
 if __name__ == '__main__':
+    requests_registry = {}
     private_key, public_key = get_my_rsa_keys()
     merchant_key = get_merchant_public_key()
     messenger = Messenger(private_key)
@@ -121,8 +123,22 @@ if __name__ == '__main__':
                 )
             )
             authenticate_messages(msg)
-            messenger.send(resolve_transaction(pm))
+            resp = resolve_transaction(pm)
+            messenger.send(get_response_msg(resp))
+            print("LOG: The receipt was sent to the merchant")
         else:
-            client_public_key = RSA.import_key(msg['client_pub_key'].encode())
+            print("LOG: Its a resolution request")
+            client_public_key = RSA.import_key(msg['public_key'].encode())
             messenger.set_dest_pub_key(client_public_key)
-            messenger.send("Resolution Flow - To Be implemented!")
+            signature = msg.pop('signature')
+            if authenticator.verify(json.dumps(msg), signature, client_public_key):
+                print(f"LOG: The request is authentic!")
+            else:
+                raise AuthenticationFailedException()
+            nc = msg['nc']
+            if nc in requests_registry:
+                messenger.send(get_response_msg(requests_registry[nc]))
+                print("LOG: The transaction was fount and the digital receipt was sent!")
+            else:
+                print("LOG: The transaction was not found!")
+                messenger.send(get_response_msg("The transaction was not found"))
