@@ -5,7 +5,7 @@
         "id": "0",
         "amount": "350",
         "card_number": "4000000000003220",
-        "card_expiry_date": "09/23",
+        "card_expiry_date": "23/09/2023",
         "card_ccode": "443",
         "order_description": "Valid Payment with Correct Data",
         "merchant": "5476"
@@ -14,7 +14,7 @@
         "id": "1",
         "amount": "500",
         "card_number": "4000000000003063",
-        "card_expiry_date": "03/20",
+        "card_expiry_date": "21/03/2020",
         "card_ccode": "221",
         "order_description": "Invalid Payment - Card Is Expired",
         "merchant": "5476"
@@ -23,7 +23,7 @@
         "id": "2",
         "amount": "5500",
         "card_number": "4000008400001629",
-        "card_expiry_date": "09/24",
+        "card_expiry_date": "25/09/2024",
         "card_ccode": "551",
         "order_description": "Invalid Payment -> Amount exceeds balance",
         "merchant": "5476"
@@ -32,7 +32,7 @@
         "id": "3",
         "amount": "50",
         "card_number": "40000084000012",
-        "card_expiry_date": "09/28",
+        "card_expiry_date": "03/09/2028",
         "card_ccode": "112",
         "order_description": "Invalid Payment -> Incorrect Card Number",
         "merchant": "5476"

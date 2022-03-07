@@ -1,0 +1,22 @@
+{
+  "data": {
+    "merchants": [
+      {
+        "id": "0",
+        "merchant_name": "BestBuy"
+      },
+      {
+        "id": "1",
+        "merchant_name": "Lidl"
+      },
+      {
+        "id": "2",
+        "merchant_name": "Puma"
+      },
+      {
+        "id": "3",
+        "merchant_name": "Gameland"
+      }
+    ]
+  }
+}
