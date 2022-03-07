@@ -3,39 +3,57 @@
     "payments": [
       {
         "id": "0",
-        "amount": "350",
+        "amount": 550,
         "card_number": "4000000000003220",
-        "card_expiry_date": "23/09/2023",
+        "card_expiry_date": "02/09/2023",
         "card_ccode": "443",
         "order_description": "Valid Payment with Correct Data",
-        "merchant": "5476"
+        "merchant": "Lidl"
       },
       {
         "id": "1",
-        "amount": "500",
+        "amount": 50,
+        "card_number": "40000084000012",
+        "card_expiry_date": "03/09/2028",
+        "card_ccode": "112",
+        "order_description": "Invalid Payment - Incorrect Card Number",
+        "merchant": "Puma"
+      },
+      {
+        "id": "2",
+        "amount": 500,
         "card_number": "4000000000003063",
         "card_expiry_date": "21/03/2020",
         "card_ccode": "221",
         "order_description": "Invalid Payment - Card Is Expired",
-        "merchant": "5476"
-      },
-      {
-        "id": "2",
-        "amount": "5500",
-        "card_number": "4000008400001629",
-        "card_expiry_date": "25/09/2024",
-        "card_ccode": "551",
-        "order_description": "Invalid Payment -> Amount exceeds balance",
-        "merchant": "5476"
+        "merchant": "Lidl"
       },
       {
         "id": "3",
-        "amount": "50",
-        "card_number": "40000084000012",
-        "card_expiry_date": "03/09/2028",
-        "card_ccode": "112",
-        "order_description": "Invalid Payment -> Incorrect Card Number",
-        "merchant": "5476"
+        "amount": 350,
+        "card_number": "4000000000003220",
+        "card_expiry_date": "02/09/2023",
+        "card_ccode": "445",
+        "order_description": "Invalid Payment - Challenge code",
+        "merchant": "Lidl"
+      },
+      {
+        "id": "4",
+        "amount": 5500,
+        "card_number": "4000008400001629",
+        "card_expiry_date": "15/09/2024",
+        "card_ccode": "551",
+        "order_description": "Invalid Payment -> Amount exceeds balance",
+        "merchant": "Puma"
+      },
+      {
+        "id": "5",
+        "amount": 120,
+        "card_number": "4000008400001629",
+        "card_expiry_date": "15/09/2024",
+        "card_ccode": "551",
+        "order_description": "Invalid Payment -> Wrong Merchant",
+        "merchant": "Invalid"
       }
     ]
   }

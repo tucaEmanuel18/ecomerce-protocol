@@ -3,28 +3,28 @@
     "cards": [
       {
         "id": "0",
-        "balance": "2000",
+        "balance": 2000,
         "card_number": "4000000000003220",
         "card_expiry_date": "02/09/2023",
         "card_ccode": "443"
       },
       {
         "id": "1",
-        "balance": "4000",
+        "balance": 4000,
         "card_number": "4000000000003063",
         "card_expiry_date": "05/03/2020",
         "card_ccode": "221"
       },
       {
         "id": "2",
-        "balance": "3500",
+        "balance": 3500,
         "card_number": "4000008400001629",
         "card_expiry_date": "15/09/2024",
         "card_ccode": "551"
       },
       {
         "id": "3",
-        "balance": "200",
+        "balance": 200,
         "card_number": "4000008400001280",
         "card_expiry_date": "21/09/2028",
         "card_ccode": "112"

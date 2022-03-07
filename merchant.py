@@ -2,16 +2,20 @@ import socket
 from network_utils import Messenger, Authenticator, AuthenticationFailedException, KEY_LENGTH, get_uniq_id
 from Crypto.PublicKey import RSA
 import json
+import time
 
 PG_ADDRESS = '127.0.0.1'
 PG_PORT = 5003
 
 PORT = 5002
-
+SIMULATE_TIMEOUT = False
+SLEEP_VALUE = 2
+SIMULATE_FAKE_SIGNATURE = False
 
 def get_pg_public_key():
     f = open('rsa_keys/pg_public_key.pem', 'r')
     return RSA.import_key(f.read())
+
 
 def get_my_rsa_keys():
     f = open('rsa_keys/merchant_key.pem', 'r')
@@ -21,15 +25,6 @@ def get_my_rsa_keys():
     public_key = RSA.import_key(f.read())
 
     return key, public_key
-
-# def generate_rsa_keys():
-#     key = RSA.generate(KEY_LENGTH)
-#     public_key = key.public_key()
-#     f = open('rsa_keys/merchant_public_key.pem', 'wb')
-#     f.write(public_key.export_key('PEM'))
-#     f.close()
-#
-#     return key, public_key
 
 
 def generate_wrong_rsa_keys():
@@ -96,7 +91,9 @@ def exchange_sub_protocol():
 
         pg_messenger.send(get_msg_to_pg())
         print("LOG: The transaction request is sent to the payment gateway!")
-        return pg_messenger.receive()
+        response = json.loads(pg_messenger.receive())
+        pg_socket.close()
+        return response
 
     msg_from_client = json.loads(client_messenger.receive())
     pm = msg_from_client["pm"]
@@ -104,9 +101,11 @@ def exchange_sub_protocol():
     if po['sid'] in clients_registry:
         authenticate_po()
         pg_response = pg_request()
-        print(f"LOG: I receive the pg respone: '{pg_response}'")
-        client_messenger.send(pg_response)
-        print("LOG: The transaction response is sent to the client!")
+        print(f"LOG: I receive the pg response: '{pg_response['resp']}'")
+        if SIMULATE_TIMEOUT:
+            time.sleep(SLEEP_VALUE)
+        client_messenger.send(json.dumps(pg_response))
+        print("LOG: The transaction response is sent to the client!\n")
     else:
         # @TODO  To return specific message to the client!
         print("ERROR: Invalid SID")
@@ -133,5 +132,3 @@ if __name__ == '__main__':
 
         setup_sub_protocol()
         exchange_sub_protocol()
-
-    client_socket.close()

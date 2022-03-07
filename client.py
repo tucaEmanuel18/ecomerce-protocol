@@ -10,8 +10,10 @@ PG_PORT = 5003
 KEY_LENGTH = 2048
 
 TIMEOUT_VALUE = 5.0
-SMALL_TIMEOUT = 0.001
+SMALL_TIMEOUT = 1.0
 SIMULATE_TIMEOUT = False
+
+SCENARIO_NUMBER = 0
 
 
 def get_public_keys():
@@ -24,7 +26,7 @@ def get_public_keys():
     return merchant_key, pg_key
 
 
-def generate_keys():
+def generate_my_rsa_keys():
     key = RSA.generate(KEY_LENGTH)
     pub_key = key.publickey()
     print("LOG: Generated RSA keys!")
@@ -32,15 +34,10 @@ def generate_keys():
 
 
 def get_payment_data():
-    return {
-        "id": "0",
-        "amount": "350",
-        "card_number": "4000000000003220",
-        "card_expiry_date": "09/23",
-        "card_ccode": "443",
-        "order_description": "Valid Payment with Correct Data",
-        "merchant": "5476"
-      }
+    f = open('dummy_payment_orders.json')
+    payment_data = json.load(f)
+    f.close()
+    return payment_data['data']['payments'][SCENARIO_NUMBER]
 
 
 def get_timeout_value():
@@ -60,12 +57,11 @@ def receive_the_receipt(messenger):
         "nc": nc
     })
     if authenticator.verify(msg_for_auth, signature, pg_key):
-        print(f"LOG: The response is authentic!")
+        print(f"LOG: Received message authenticated!")
     else:
         raise AuthenticationFailedException()
     print(f"Response: {response['resp']}")
     return response['resp']
-
 
 
 def setup_sub_protocol():
@@ -120,7 +116,6 @@ def exchange_sub_protocol():
         "po": po
     })
 
-
     merchant_socket.settimeout(get_timeout_value())
     try:
         merchant_messenger.send(msg)
@@ -128,7 +123,7 @@ def exchange_sub_protocol():
         return True
     except socket.timeout:
         print("LOG: Exchange sub-protocol time is out!")
-        merchant_socket.settimeout(TIMEOUT_VALUE)
+        merchant_socket.close()
         return False
 
 
@@ -151,7 +146,7 @@ def resolution_sub_protocol():
 
 
 if __name__ == '__main__':
-    private_key, public_key = generate_keys()
+    private_key, public_key = generate_my_rsa_keys()
     merchant_key, pg_key = get_public_keys()
     payment_data = get_payment_data()
     nc = get_uniq_id()

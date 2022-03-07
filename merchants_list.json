@@ -3,19 +3,23 @@
     "merchants": [
       {
         "id": "0",
-        "merchant_name": "BestBuy"
+        "merchant_name": "Lidl",
+        "balance": 200200
       },
       {
         "id": "1",
-        "merchant_name": "Lidl"
+        "merchant_name": "BestBuy",
+        "balance": 100100
       },
       {
         "id": "2",
-        "merchant_name": "Puma"
+        "merchant_name": "Puma",
+        "balance": 300300
       },
       {
         "id": "3",
-        "merchant_name": "Gameland"
+        "merchant_name": "Gameland",
+        "balance": 12345
       }
     ]
   }

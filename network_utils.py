@@ -172,70 +172,18 @@ if __name__ == '__main__':
 
 
 
-def get_public_keys():
-    f = open('rsa_keys/merchant_public_key.pem', 'r')
-    merchant_key = RSA.import_key(f.read())
-
-    f = open('rsa_keys/pg_public_key.pem', 'r')
-    pg_key = RSA.import_key(f.read())
-    return merchant_key, pg_key
 
 
-# class Messenger:
-#     def __init__(self, my_priv_key, channel):
-#         self.channel = channel
-#         self.my_priv_key = my_priv_key
-#         self.decryptor = PKCS1_OAEP.new(my_priv_key)
+
+
+
+
+
+# def generate_rsa_keys():
+#     key = RSA.generate(KEY_LENGTH)
+#     public_key = key.public_key()
+#     f = open('rsa_keys/merchant_public_key.pem', 'wb')
+#     f.write(public_key.export_key('PEM'))
+#     f.close()
 #
-#         self.dest_pub_key = None
-#         self.encryptor = None
-#
-#     def send(self, message):
-#         encrypt_msg = self.encrypt(message)
-#         if not encrypt_msg:
-#             return False
-#         else:
-#             self.channel.send(len(encrypt_msg).to_bytes(BYTES_NUMBER, ENCODING))
-#             self.channel.send(encrypt_msg)
-#
-#     def receive(self):
-#         msg_length = int.from_bytes(self.channel.recv(BYTES_NUMBER), ENCODING)
-#         print(msg_length)
-#         encrypt_msg = self.channel.recv(msg_length)
-#         message = self.decrypt(encrypt_msg).decode()
-#         return message
-#
-#     def set_dest_pub_key(self, dest_pub_key):
-#         self.dest_pub_key = dest_pub_key
-#         self.encryptor = PKCS1_OAEP.new(dest_pub_key)
-#
-#     def encrypt(self, message):
-#         if self.dest_pub_key is None:
-#             return False
-#         else:
-#             encrypted_message = ''.encode()
-#             start_position = 0
-#             length = len(message)
-#             while start_position + BLOCK_LENGTH <= length:
-#                 current_block = message[start_position:start_position + BLOCK_LENGTH]
-#                 encrypted_message += (self.encryptor.encrypt(current_block.encode()))
-#                 start_position += BLOCK_LENGTH
-#
-#             if start_position < length:
-#                 current_block = message[start_position:length]
-#                 encrypted_message += (self.encryptor.encrypt(current_block.encode()))
-#             return encrypted_message
-#
-#     def decrypt(self, message):
-#         decrypted_message = ''.encode()
-#         start_position = 0
-#         length = len(message)
-#         while start_position + BLOCK_LENGTH <= length:
-#             current_block = message[start_position:start_position + BLOCK_LENGTH]
-#             decrypted_message += (self.decryptor.decrypt(current_block))
-#             start_position += BLOCK_LENGTH
-#
-#         if start_position < length:
-#             current_block = message[start_position:length]
-#             decrypted_message += (self.decryptor.decrypt(current_block))
-#         return decrypted_message
+#     return key, public_key
