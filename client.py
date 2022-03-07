@@ -9,6 +9,10 @@ PG_ADDRESS = '127.0.0.1'
 PG_PORT = 5003
 KEY_LENGTH = 2048
 
+TIMEOUT_VALUE = 5.0
+SMALL_TIMEOUT = 0.001
+SIMULATE_TIMEOUT = False
+
 
 def get_public_keys():
     f = open('rsa_keys/merchant_public_key.pem', 'r')
@@ -17,7 +21,7 @@ def get_public_keys():
     f = open('rsa_keys/pg_public_key.pem', 'r')
     pg_key = RSA.import_key(f.read())
     print("LOG: Obtained the public RSA keys of the Merchant and PG!")
-    return (merchant_key, pg_key)
+    return merchant_key, pg_key
 
 
 def generate_keys():
@@ -37,6 +41,31 @@ def get_payment_data():
         "order_description": "Valid Payment with Correct Data",
         "merchant": "5476"
       }
+
+
+def get_timeout_value():
+    if SIMULATE_TIMEOUT:
+        return SMALL_TIMEOUT
+    else:
+        return TIMEOUT_VALUE
+
+
+def receive_the_receipt(messenger):
+    response = json.loads(messenger.receive())
+    signature = response.pop('signature')
+    msg_for_auth = json.dumps({
+        "resp": response['resp'],
+        "sid": sid,
+        "amount": payment_data['amount'],
+        "nc": nc
+    })
+    if authenticator.verify(msg_for_auth, signature, pg_key):
+        print(f"LOG: The response is authentic!")
+    else:
+        raise AuthenticationFailedException()
+    print(f"Response: {response['resp']}")
+    return response['resp']
+
 
 
 def setup_sub_protocol():
@@ -91,30 +120,34 @@ def exchange_sub_protocol():
         "po": po
     })
 
-    merchant_socket.settimeout(5.0)
+
+    merchant_socket.settimeout(get_timeout_value())
     try:
         merchant_messenger.send(msg)
-        response = json.loads(merchant_messenger.receive())
-        signature = response.pop('signature')
-        msg_for_auth = json.dumps({
-            "resp": response['resp'],
-            "sid": sid,
-            "amount": payment_data['amount'],
-            "nc": nc
-        })
-        if authenticator.verify(msg_for_auth, signature, pg_key):
-            print(f"LOG: The response is authentic!")
-        else:
-            raise AuthenticationFailedException()
-        print(f"Response: {response['resp']}")
+        receive_the_receipt(merchant_messenger)
         return True
     except socket.timeout:
         print("LOG: Exchange sub-protocol time is out!")
+        merchant_socket.settimeout(TIMEOUT_VALUE)
         return False
 
 
 def resolution_sub_protocol():
-    print("Client resolution sub protocol: TO BE Implemented")
+    pg_socket = socket.socket()
+    print("LOG: PG Socket successfully created!")
+    pg_socket.connect((PG_ADDRESS, PG_PORT))
+    print("LOG: Successfully connected with the payment gateway socket!")
+    pg_messenger.set_channel(pg_socket)
+
+    resolution_msg = {
+        "sid": sid,
+        "amount": payment_data['amount'],
+        "nc": nc,
+        "public_key": public_key.export_key('PEM').decode()
+    }
+    resolution_msg['signature'] = authenticator.sign(json.dumps(resolution_msg))
+    pg_messenger.send(json.dumps(resolution_msg))
+    receive_the_receipt(pg_messenger)
 
 
 if __name__ == '__main__':
